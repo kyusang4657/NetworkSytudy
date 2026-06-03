@@ -1,4 +1,4 @@
-package gsj_network.Ch07;
+package gsj_tcpIp.server_socket;
 /*
 * 서버 포트만 열었다가 바로 종료하는 코드
 * accept()가 없으므로 클라이언트 연결도 안 받고 통신도 안 한다.

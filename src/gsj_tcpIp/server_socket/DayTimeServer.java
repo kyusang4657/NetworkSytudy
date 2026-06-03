@@ -1,4 +1,4 @@
-package gsj_network.gsj_tcpIp;
+package gsj_tcpIp.server_socket;
 
 import java.io.*;
 import java.net.*;
@@ -7,9 +7,9 @@ import java.util.Date;
 public class DayTimeServer {
     public final static int daytimeport = 13;
     public static void main(String[] args) {
-        //13¹ø Æ÷Æ®¿¡¼­ Å¬¶óÀÌ¾ðÆ® Á¢¼ÓÀ» ±â´Ù¸®´Â ¼­¹ö ¼ÒÄÏ »ý¼º
+        //13ï¿½ï¿½ ï¿½ï¿½Æ®ï¿½ï¿½ï¿½ï¿½ Å¬ï¿½ï¿½ï¿½Ì¾ï¿½Æ® ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ù¸ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         try(ServerSocket theServer = new ServerSocket(daytimeport)){
-            //¹«ÇÑ¹Ýº¹À» ÅëÇØ accept()¸¦ ¹Ýº¹ÇÏ¸é¼­, ¼­¹öÀÇ ½ÇÇà »óÅÂ¸¦ À¯ÁöÇÒ ¼ö ÀÖ´Ù.
+            //ï¿½ï¿½ï¿½Ñ¹Ýºï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ accept()ï¿½ï¿½ ï¿½Ýºï¿½ï¿½Ï¸é¼­, ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Â¸ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Ö´ï¿½.
             while(true){
                 try(Socket theSocket = theServer.accept();
                     BufferedWriter writer = new BufferedWriter(

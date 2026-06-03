@@ -1,4 +1,4 @@
-package gsj_network.Ch07;
+package gsj_tcpIp.server_socket;
 
 import java.io.*;
 import java.net.*;
@@ -8,7 +8,7 @@ public class LookForServerPorts {
         for(int i = 0; i < 65535; i++){
             try(ServerSocket serverSocket = new ServerSocket(i)){
             }catch(IOException e){
-                System.out.println(i + " ¹øÂ° Æ÷Æ®´Â Æ¯Á¤¼­¹ö°¡ »ç¿ëÁß ÀÔ´Ï´Ù.");
+                System.out.println(i + " ï¿½ï¿½Â° ï¿½ï¿½Æ®ï¿½ï¿½ Æ¯ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ô´Ï´ï¿½.");
             }
         }
     }
