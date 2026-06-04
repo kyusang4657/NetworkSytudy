@@ -14,13 +14,7 @@ public class FileClient {
         try (DatagramSocket socket = new DatagramSocket()) {
             InetAddress serverAddress = InetAddress.getByName(SERVER_IP);
 
-            String request = """
-                    {
-                        "type": "RRQ",
-                        "filename": "test.txt"
-                    }
-                    """;
-
+            String request = PacketUtil.createRRQ("test.txt");
             byte[] requestBytes = request.getBytes(StandardCharsets.UTF_8);
             DatagramPacket sendPacket = new DatagramPacket(
                     requestBytes,

@@ -24,23 +24,29 @@ public class FileServer {
                         receivePacket.getLength(),
                         StandardCharsets.UTF_8
                 );
-                System.out.println("\n" + "Receive client request" + message);
-                String response = """
-                        {
-                            "type": "ACK",
-                            "message": "Request received"
-                        }
-                        """;
-                byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
+                System.out.println("Request received:");
+                System.out.println(message);
 
-                DatagramPacket sendPacket = new DatagramPacket(
-                        responseBytes,
-                        responseBytes.length,
-                        receivePacket.getSocketAddress()
-                );
+                if(PacketUtil.isRRQ(message)) {
+                    String filename = PacketUtil.extractFilename(message);
 
-                socket.send(sendPacket);
-                System.out.println("ACK response transmission complete");
+                    System.out.println("RRQ request received");
+                    System.out.println("Requested filename: " + filename);
+
+                    String response = PacketUtil.createACK(0);
+
+                    byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
+
+                    DatagramPacket sendPacket = new DatagramPacket(
+                            responseBytes,
+                            responseBytes.length,
+                            receivePacket.getAddress(),
+                            receivePacket.getPort()
+                    );
+
+                    socket.send(sendPacket);
+                    System.out.println("ACK response sent");
+                }
             }
         }catch(Exception e){
             e.printStackTrace();
