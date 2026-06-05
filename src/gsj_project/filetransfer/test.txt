@@ -1,0 +1,2 @@
+Hello, this is test file.
+This file will be sent from server to client.

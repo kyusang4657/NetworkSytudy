@@ -19,6 +19,16 @@ public class PacketUtil {
                 """.formatted(block);
     }
 
+    public static String createDATA(int block, String data) {
+        return """
+                {
+                    "type": "DATA",
+                    "block": "%d",
+                    "data": "%s"
+                }
+                """.formatted(block, data);
+    }
+
     public static String createError(String message) {
         return """
             {
@@ -35,7 +45,7 @@ public class PacketUtil {
         String key = "\"filename\":";
         int keyIndex = json.indexOf(key);
 
-        if(keyIndex != -1){
+        if(keyIndex == -1){
             return null;
         }
 

@@ -1,5 +1,7 @@
 package gsj_project.filetransfer;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.nio.charset.StandardCharsets;
@@ -33,8 +35,10 @@ public class FileServer {
                     System.out.println("RRQ request received");
                     System.out.println("Requested filename: " + filename);
 
-                    String response = PacketUtil.createACK(0);
+                    Path filePath = Path.of("C:/gsj_study/NetworkSytudy/src/gsj_project/filetransfer/" + filename);
+                    String fileData = Files.readString(filePath);
 
+                    String response = PacketUtil.createDATA(1, fileData);
                     byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
 
                     DatagramPacket sendPacket = new DatagramPacket(
@@ -45,7 +49,7 @@ public class FileServer {
                     );
 
                     socket.send(sendPacket);
-                    System.out.println("ACK response sent");
+                    System.out.println("DATA response sent");
                 }
             }
         }catch(Exception e){
