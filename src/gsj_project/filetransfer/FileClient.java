@@ -4,6 +4,8 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 public class FileClient {
     private static final String SERVER_IP = "127.0.0.1";
@@ -40,14 +42,14 @@ public class FileClient {
             Packet packet = PacketUtil.fromJson(response);
 
             if(packet.getType().equals("DATA")) {
-                System.out.println("Received file data: ");
-                System.out.println(packet.getData());
+                Files.writeString(
+                        Path.of("C:/gsj_study/NetworkSytudy/src/gsj_project/filetransfer/downloaded_test.txt"),
+                        packet.getData()
+                );
+                System.out.println("File downloaded successfully");
             }else if(packet.getType().equals("ERROR")) {
                 System.out.println("Server error: " + packet.getMessage());
             }
-
-            //System.out.println("Receive server response:");
-            //System.out.println(response);
         }catch (Exception e){
             e.printStackTrace();
         }
