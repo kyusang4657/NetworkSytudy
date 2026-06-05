@@ -36,8 +36,18 @@ public class FileClient {
                     receivePacket.getLength(),
                     StandardCharsets.UTF_8
             );
-            System.out.println("Receive server response:");
-            System.out.println(response);
+
+            Packet packet = PacketUtil.fromJson(response);
+
+            if(packet.getType().equals("DATA")) {
+                System.out.println("Received file data: ");
+                System.out.println(packet.getData());
+            }else if(packet.getType().equals("ERROR")) {
+                System.out.println("Server error: " + packet.getMessage());
+            }
+
+            //System.out.println("Receive server response:");
+            //System.out.println(response);
         }catch (Exception e){
             e.printStackTrace();
         }

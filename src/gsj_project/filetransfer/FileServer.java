@@ -29,16 +29,20 @@ public class FileServer {
                 System.out.println("Request received:");
                 System.out.println(message);
 
-                if(PacketUtil.isRRQ(message)) {
-                    String filename = PacketUtil.extractFilename(message);
+                Packet packet = PacketUtil.fromJson(message);
 
-                    System.out.println("RRQ request received");
-                    System.out.println("Requested filename: " + filename);
+                if(packet.getType().equals("RRQ")) {
+                    String filename = packet.getFilename();
 
                     Path filePath = Path.of("C:/gsj_study/NetworkSytudy/src/gsj_project/filetransfer/" + filename);
-                    String fileData = Files.readString(filePath);
+                    String response;
 
-                    String response = PacketUtil.createDATA(1, fileData);
+                    if(Files.exists(filePath)) {
+                        String fileData = Files.readString(filePath);
+                        response = PacketUtil.createDATA(1, fileData);
+                    }else{
+                        response = PacketUtil.createError("File not found: " + filename);
+                    }
                     byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
 
                     DatagramPacket sendPacket = new DatagramPacket(
@@ -47,9 +51,7 @@ public class FileServer {
                             receivePacket.getAddress(),
                             receivePacket.getPort()
                     );
-
                     socket.send(sendPacket);
-                    System.out.println("DATA response sent");
                 }
             }
         }catch(Exception e){

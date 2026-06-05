@@ -1,60 +1,31 @@
 package gsj_project.filetransfer;
 
+import com.google.gson.Gson;
+
 public class PacketUtil {
+    private static final Gson gson = new Gson();
+
     public static String createRRQ(String filename) {
-        return """
-                {
-                    "type": "RRQ",
-                    "filename": "%s"
-                }
-                """.formatted(filename);
+        Packet packet = new Packet("RRQ", filename, 0, null, null);
+        return gson.toJson(packet);
     }
 
     public static String createACK(int block) {
-        return """
-                {
-                    "type": "ACK",
-                    "block": "%d"
-                }
-                """.formatted(block);
+        Packet packet = new Packet("ACK", null, block, null, null);
+        return gson.toJson(packet);
     }
 
     public static String createDATA(int block, String data) {
-        return """
-                {
-                    "type": "DATA",
-                    "block": "%d",
-                    "data": "%s"
-                }
-                """.formatted(block, data);
+        Packet packet = new Packet("DATA", null, block, data, null);
+        return gson.toJson(packet);
     }
 
     public static String createError(String message) {
-        return """
-            {
-                "type": "ERROR",
-                "message": "%s"
-        """.formatted(message);
+        Packet packet = new Packet("ERROR", null, 0, null, message);
+        return gson.toJson(packet);
     }
 
-    public static boolean isRRQ(String json) {
-        return json.contains("\"type\": \"RRQ\"");
-    }
-
-    public static String extractFilename(String json) {
-        String key = "\"filename\":";
-        int keyIndex = json.indexOf(key);
-
-        if(keyIndex == -1){
-            return null;
-        }
-
-        int firstQuote = json.indexOf("\"", keyIndex + key.length());
-        int secondQuote = json.indexOf("\"", firstQuote + 1);
-
-        if(firstQuote == -1 || secondQuote == -1){
-            return null;
-        }
-        return json.substring(firstQuote + 1, secondQuote);
+    public static Packet fromJson(String json) {
+        return gson.fromJson(json, Packet.class);
     }
 }
