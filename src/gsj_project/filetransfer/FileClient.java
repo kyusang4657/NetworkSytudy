@@ -51,7 +51,18 @@ public class FileClient {
                 if(packet.getType().equals("DATA")) {
                     byte[] decodedData = Base64.getDecoder().decode(packet.getData());
                     fileOutput.write(decodedData);
+
+                    String ack = PacketUtil.createACK(packet.getBlock());
+                    byte[] ackBytes = ack.getBytes(StandardCharsets.UTF_8);
+                    DatagramPacket ackPacket = new DatagramPacket(
+                            ackBytes,
+                            ackBytes.length,
+                            receivePacket.getAddress(),
+                            receivePacket.getPort()
+                    );
                     System.out.println("DATA block received: " + packet.getBlock());
+                    socket.send(ackPacket);
+                    System.out.println("ACK sent: " + packet.getBlock());
 
                     if(packet.getDataSize() < 512){
                         break;

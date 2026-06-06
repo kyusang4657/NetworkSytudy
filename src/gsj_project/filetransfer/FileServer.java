@@ -63,9 +63,26 @@ public class FileServer {
                                     receivePacket.getPort()
                             );
                             socket.send(sendPacket);
-                            System.out.println("DATA block sent: " + block);
+                            System.out.println("Data block sent: " + block);
 
-                            block++;
+                            byte[] ackBuffer = new byte[BUFFER_SIZE];
+                            DatagramPacket ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length);
+                            socket.receive(ackPacket);
+
+                            String ackMessage = new String(
+                                    ackPacket.getData(),
+                                    0, ackPacket.getLength(),
+                                    StandardCharsets.UTF_8
+                            );
+                            Packet ack = PacketUtil.fromJson(ackMessage);
+
+                            if(ack.getType().equals("ACK") && ack.getBlock() == block) {
+                                System.out.println("ACK received: " + block);
+                                block++;
+                            }else{
+                                System.out.println("Invalid ACK received");
+                                break;
+                            }
 
                             if(dataSize < 512) {
                                 break;

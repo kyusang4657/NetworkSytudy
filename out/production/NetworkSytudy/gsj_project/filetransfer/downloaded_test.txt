@@ -1,1 +1,2 @@
-SGVsbG8sIHRoaXMgaXMgdGVzdCBmaWxlLg0KVGhpcyBmaWxlIHdpbGwgYmUgc2VudCBmcm9tIHNlcnZlciB0byBjbGllbnQu
+Hello, this is test file.
+This file will be sent from server to client.
