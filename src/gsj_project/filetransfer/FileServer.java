@@ -5,6 +5,8 @@ import java.nio.file.Path;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Base64;
 
 public class FileServer {
     private static final int SERVER_PORT = 9000;
@@ -38,20 +40,49 @@ public class FileServer {
                     String response;
 
                     if(Files.exists(filePath)) {
-                        String fileData = Files.readString(filePath);
-                        response = PacketUtil.createDATA(1, fileData);
+                        byte[] fileBytes = Files.readAllBytes(filePath);
+                        int block = 1;
+
+                        for(int offset = 0; offset < fileBytes.length; offset += 512) {
+                            int dataSize = Math.min(512, fileBytes.length - offset);
+
+                            byte[] chunk = Arrays.copyOfRange(
+                                    fileBytes,
+                                    offset,
+                                    offset + dataSize
+                            );
+
+                            String encodeData = Base64.getEncoder().encodeToString(chunk);
+                            response = PacketUtil.createDATA(block, encodeData, dataSize);
+                            byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
+
+                            DatagramPacket sendPacket = new DatagramPacket(
+                                    responseBytes,
+                                    responseBytes.length,
+                                    receivePacket.getAddress(),
+                                    receivePacket.getPort()
+                            );
+                            socket.send(sendPacket);
+                            System.out.println("DATA block sent: " + block);
+
+                            block++;
+
+                            if(dataSize < 512) {
+                                break;
+                            }
+                        }
                     }else{
                         response = PacketUtil.createError("File not found: " + filename);
-                    }
-                    byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
+                        byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
 
-                    DatagramPacket sendPacket = new DatagramPacket(
-                            responseBytes,
-                            responseBytes.length,
-                            receivePacket.getAddress(),
-                            receivePacket.getPort()
-                    );
-                    socket.send(sendPacket);
+                        DatagramPacket sendPacket = new DatagramPacket(
+                                responseBytes,
+                                responseBytes.length,
+                                receivePacket.getAddress(),
+                                receivePacket.getPort()
+                        );
+                        socket.send(sendPacket);
+                    }
                 }
             }
         }catch(Exception e){

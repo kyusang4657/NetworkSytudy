@@ -6,6 +6,8 @@ import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.io.ByteArrayOutputStream;
+import java.util.Base64;
 
 public class FileClient {
     private static final String SERVER_IP = "127.0.0.1";
@@ -30,26 +32,43 @@ public class FileClient {
 
             byte[] buffer = new byte[BUFFER_SIZE];
             DatagramPacket receivePacket = new DatagramPacket(buffer, buffer.length);
-            socket.receive(receivePacket);
 
-            String response = new String(
-                    receivePacket.getData(),
-                    0,
-                    receivePacket.getLength(),
-                    StandardCharsets.UTF_8
+            ByteArrayOutputStream fileOutput = new ByteArrayOutputStream();
+
+            while(true) {
+                receivePacket.setLength(buffer.length);
+                socket.receive(receivePacket);
+
+                String response = new String(
+                        receivePacket.getData(),
+                        0,
+                        receivePacket.getLength(),
+                        StandardCharsets.UTF_8
+                );
+
+                Packet packet = PacketUtil.fromJson(response);
+
+                if(packet.getType().equals("DATA")) {
+                    byte[] decodedData = Base64.getDecoder().decode(packet.getData());
+                    fileOutput.write(decodedData);
+                    System.out.println("DATA block received: " + packet.getBlock());
+
+                    if(packet.getDataSize() < 512){
+                        break;
+                    }
+
+                }else if(packet.getType().equals("ERROR")) {
+                    System.out.println("Server error: " + packet.getMessage());
+                    return;
+                }
+            }
+
+            Files.write(
+                    Path.of("C:/gsj_study/NetworkSytudy/src/gsj_project/filetransfer/downloaded_test.txt"),
+                    fileOutput.toByteArray()
             );
 
-            Packet packet = PacketUtil.fromJson(response);
-
-            if(packet.getType().equals("DATA")) {
-                Files.writeString(
-                        Path.of("C:/gsj_study/NetworkSytudy/src/gsj_project/filetransfer/downloaded_test.txt"),
-                        packet.getData()
-                );
-                System.out.println("File downloaded successfully");
-            }else if(packet.getType().equals("ERROR")) {
-                System.out.println("Server error: " + packet.getMessage());
-            }
+            System.out.println("File downloaded successfully");
         }catch (Exception e){
             e.printStackTrace();
         }
