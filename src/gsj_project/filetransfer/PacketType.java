@@ -5,6 +5,6 @@ public enum PacketType {
     WRQ,
     DATA,
     ACK,
-    MACK,
+    NACK,
     ERROR
 }

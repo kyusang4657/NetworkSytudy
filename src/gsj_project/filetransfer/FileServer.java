@@ -7,6 +7,7 @@ import java.net.DatagramSocket;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Base64;
+import java.net.SocketTimeoutException;
 
 public class FileServer {
     private static final int SERVER_PORT = 9000;
@@ -20,6 +21,7 @@ public class FileServer {
 
             while(true){
                 DatagramPacket receivePacket = new DatagramPacket(buffer, buffer.length);
+                receivePacket.setLength(buffer.length);
                 socket.receive(receivePacket);
 
                 String message = new String(
@@ -65,24 +67,38 @@ public class FileServer {
                             socket.send(sendPacket);
                             System.out.println("Data block sent: " + block);
 
-                            byte[] ackBuffer = new byte[BUFFER_SIZE];
-                            DatagramPacket ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length);
-                            socket.receive(ackPacket);
+                            socket.setSoTimeout(3000);
 
-                            String ackMessage = new String(
-                                    ackPacket.getData(),
-                                    0, ackPacket.getLength(),
-                                    StandardCharsets.UTF_8
-                            );
-                            Packet ack = PacketUtil.fromJson(ackMessage);
+                            boolean ackReceived = false;
 
-                            if(ack.getType().equals("ACK") && ack.getBlock() == block) {
-                                System.out.println("ACK received: " + block);
-                                block++;
-                            }else{
-                                System.out.println("Invalid ACK received");
-                                break;
+                            while(!ackReceived){
+                                try{
+                                    byte[] ackBuffer = new byte[BUFFER_SIZE];
+                                    DatagramPacket ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length);
+                                    socket.receive(ackPacket);
+
+                                    String ackMessage = new String(
+                                            ackPacket.getData(),
+                                            0, ackPacket.getLength(),
+                                            StandardCharsets.UTF_8
+                                    );
+                                    Packet ack = PacketUtil.fromJson(ackMessage);
+
+                                    if(ack.getType().equals("ACK") && ack.getBlock() == block) {
+                                        System.out.println("ACK received: " + block);
+                                        ackReceived = true;
+                                        block++;
+                                    }else{
+                                        System.out.println("Invalid ACK received");
+                                        break;
+                                    }
+                                }catch(SocketTimeoutException e) {
+                                    socket.send(sendPacket);
+                                    System.out.println("ACK timeout. Resend DATA block: " + block);
+                                }
                             }
+
+                            socket.setSoTimeout(0);
 
                             if(dataSize < 512) {
                                 break;
