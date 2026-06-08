@@ -13,6 +13,7 @@ public class FileClient {
     private static final String SERVER_IP = "127.0.0.1";
     private static final int SERVER_PORT = 9000;
     private static final int BUFFER_SIZE = 4096;
+    private static final int BLOCK_SIZE = 512;
 
     public static void main(String[] args) {
         FileClient client = new FileClient();
@@ -66,7 +67,7 @@ public class FileClient {
                     System.out.println("DATA block received: " + packet.getBlock());
                     sendACK(socket, receivePacket, packet.getBlock());
 
-                    if(packet.getDataSize() < BUFFER_SIZE){
+                    if(packet.getDataSize() < BLOCK_SIZE){
                         break;
                     }
                 } else if(packet.getType().equals("ERROR")) {
