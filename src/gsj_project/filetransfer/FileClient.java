@@ -24,102 +24,83 @@ public class FileClient {
             InetAddress serverAddress = InetAddress.getByName(SERVER_IP);
 
             String request = PacketUtil.createRRQ(filename);
+
+            Path outputPath = Path.of("C:/gsj_study/NetworkSytudy/src/gsj_project/filetransfer/downloaded_" + filename);
+            receiveFile(socket, outputPath);
         }catch(Exception e){
             e.printStackTrace();
         }
     }
 
-    private void sendRRQ(DatagramSocket socket, InetAddress serverAddress, String message) {
+    private void sendRRQ(DatagramSocket socket, InetAddress serverAddress, String filename) throws Exception{
+        String request = PacketUtil.createRRQ(filename);
+        byte[] requestBytes = request.getBytes(StandardCharsets.UTF_8);
 
+        DatagramPacket sendPacket = new DatagramPacket(
+                requestBytes,
+                requestBytes.length,
+                serverAddress,
+                SERVER_PORT
+        );
+        socket.send(sendPacket);
+        System.out.println("RRQ request sent successfully");
     }
 
-    private void reveiveFile(DatagramSocket socket, InetAddress serverAddress, String filename) {
-
-    }
-
-    private void receiveFile(DatagramSocket socket, Path outputPath) {
-
-    }
-
-    private void sendACK(DatagramSocket socket, DatagramPacket receivePacket, int block){
-
-    }
-
-    private static String packetToMessage(DatagramPacket packet) {
-
-    }
-    /*private static final String SERVER_IP = "127.0.0.1";
-    private static final int SERVER_PORT = 9000;
-    private static final int BUFFER_SIZE = 4096;
-
-    public static void main(String[] args) {
-        try (DatagramSocket socket = new DatagramSocket()) {
-            InetAddress serverAddress = InetAddress.getByName(SERVER_IP);
-
-            String request = PacketUtil.createRRQ("test.txt");
-            byte[] requestBytes = request.getBytes(StandardCharsets.UTF_8);
-            DatagramPacket sendPacket = new DatagramPacket(
-                    requestBytes,
-                    requestBytes.length,
-                    serverAddress,
-                    SERVER_PORT
-            );
-
-            socket.send(sendPacket);
-            System.out.println("RRQ request sent successfully");
-
+    private void receiveFile (DatagramSocket socket, Path outputPath) {
+        try {
             byte[] buffer = new byte[BUFFER_SIZE];
             DatagramPacket receivePacket = new DatagramPacket(buffer, buffer.length);
-
             ByteArrayOutputStream fileOutput = new ByteArrayOutputStream();
 
-            while(true) {
+            while(true){
                 receivePacket.setLength(buffer.length);
                 socket.receive(receivePacket);
 
-                String response = new String(
-                        receivePacket.getData(),
-                        0,
-                        receivePacket.getLength(),
-                        StandardCharsets.UTF_8
-                );
-
+                String response = packetToMessage(receivePacket);
                 Packet packet = PacketUtil.fromJson(response);
 
-                if(packet.getType().equals("DATA")) {
-                    byte[] decodedData = Base64.getDecoder().decode(packet.getData());
-                    fileOutput.write(decodedData);
+                if(packet.getType().equals("DATA")){
+                    byte[] decodeData = Base64.getDecoder().decode(packet.getData());
+                    fileOutput.write(decodeData);
 
-                    String ack = PacketUtil.createACK(packet.getBlock());
-                    byte[] ackBytes = ack.getBytes(StandardCharsets.UTF_8);
-                    DatagramPacket ackPacket = new DatagramPacket(
-                            ackBytes,
-                            ackBytes.length,
-                            receivePacket.getAddress(),
-                            receivePacket.getPort()
-                    );
                     System.out.println("DATA block received: " + packet.getBlock());
-                    socket.send(ackPacket);
-                    System.out.println("ACK sent: " + packet.getBlock());
+                    sendACK(socket, receivePacket, packet.getBlock());
 
                     if(packet.getDataSize() < 512){
                         break;
                     }
-
-                }else if(packet.getType().equals("ERROR")) {
+                } else if(packet.getType().equals("ERROR")) {
                     System.out.println("Server error: " + packet.getMessage());
                     return;
                 }
             }
-
-            Files.write(
-                    Path.of("C:/gsj_study/NetworkSytudy/src/gsj_project/filetransfer/downloaded_test.txt"),
-                    fileOutput.toByteArray()
-            );
-
+            Files.write(outputPath, fileOutput.toByteArray());
             System.out.println("File downloaded successfully");
-        }catch (Exception e){
+        }catch(Exception e) {
             e.printStackTrace();
         }
-    }*/
+    }
+
+    private void sendACK(DatagramSocket socket, DatagramPacket receivePacket, int block) throws Exception{
+        String ack = PacketUtil.createACK(block);
+        byte[] ackBytes = ack.getBytes(StandardCharsets.UTF_8);
+        DatagramPacket ackPacket = new DatagramPacket(
+                ackBytes,
+                ackBytes.length,
+                receivePacket.getAddress(),
+                receivePacket.getPort()
+        );
+
+        socket.send(ackPacket);
+        System.out.println("ACK sent: " + block);
+    }
+
+    private static String packetToMessage(DatagramPacket packet) {
+        return new String(
+                packet.getData(),
+                0,
+                packet.getLength(),
+                StandardCharsets.UTF_8
+        );
+    }
 }
