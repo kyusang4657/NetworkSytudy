@@ -15,6 +15,44 @@ public class FileClient {
     private static final int BUFFER_SIZE = 4096;
 
     public static void main(String[] args) {
+        FileClient client = new FileClient();
+        client.downloadFile("test.txt");
+    }
+
+    public void downloadFile(String filename) {
+        try (DatagramSocket socket = new DatagramSocket()) {
+            InetAddress serverAddress = InetAddress.getByName(SERVER_IP);
+
+            String request = PacketUtil.createRRQ(filename);
+        }catch(Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    private void sendRRQ(DatagramSocket socket, InetAddress serverAddress, String message) {
+
+    }
+
+    private void reveiveFile(DatagramSocket socket, InetAddress serverAddress, String filename) {
+
+    }
+
+    private void receiveFile(DatagramSocket socket, Path outputPath) {
+
+    }
+
+    private void sendACK(DatagramSocket socket, DatagramPacket receivePacket, int block){
+
+    }
+
+    private static String packetToMessage(DatagramPacket packet) {
+
+    }
+    /*private static final String SERVER_IP = "127.0.0.1";
+    private static final int SERVER_PORT = 9000;
+    private static final int BUFFER_SIZE = 4096;
+
+    public static void main(String[] args) {
         try (DatagramSocket socket = new DatagramSocket()) {
             InetAddress serverAddress = InetAddress.getByName(SERVER_IP);
 
@@ -83,5 +121,5 @@ public class FileClient {
         }catch (Exception e){
             e.printStackTrace();
         }
-    }
+    }*/
 }
