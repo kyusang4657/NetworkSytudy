@@ -23,7 +23,7 @@ public class FileClient {
         try (DatagramSocket socket = new DatagramSocket()) {
             InetAddress serverAddress = InetAddress.getByName(SERVER_IP);
 
-            String request = PacketUtil.createRRQ(filename);
+            sendRRQ(socket, serverAddress, filename);
 
             Path outputPath = Path.of("C:/gsj_study/NetworkSytudy/src/gsj_project/filetransfer/downloaded_" + filename);
             receiveFile(socket, outputPath);
@@ -66,7 +66,7 @@ public class FileClient {
                     System.out.println("DATA block received: " + packet.getBlock());
                     sendACK(socket, receivePacket, packet.getBlock());
 
-                    if(packet.getDataSize() < 512){
+                    if(packet.getDataSize() < BUFFER_SIZE){
                         break;
                     }
                 } else if(packet.getType().equals("ERROR")) {
