@@ -28,4 +28,9 @@ public class PacketUtil {
     public static Packet fromJson(String json) {
         return gson.fromJson(json, Packet.class);
     }
+
+    public static String createWRQ (String filename) {
+            Packet packet = new Packet("WRQ", filename, 0, null, null, 0);
+            return gson.toJson(packet);
+    }
 }

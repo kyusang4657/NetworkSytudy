@@ -18,6 +18,7 @@ public class FileClient {
     public static void main(String[] args) {
         FileClient client = new FileClient();
         client.downloadFile("test.txt");
+        client.uploadFile("test.txt");
     }
 
     public void downloadFile(String filename) {
@@ -103,5 +104,97 @@ public class FileClient {
                 packet.getLength(),
                 StandardCharsets.UTF_8
         );
+    }
+
+    public void uploadFile(String filename) {
+        try (DatagramSocket socket = new DatagramSocket()) {
+            InetAddress serverAddress = InetAddress.getByName(SERVER_IP);
+
+            String request = PacketUtil.createWRQ(filename);
+            byte[] requestBytes = request.getBytes(StandardCharsets.UTF_8);
+
+            DatagramPacket sendPacket = new DatagramPacket(
+                    requestBytes,
+                    requestBytes.length,
+                    serverAddress,
+                    SERVER_PORT
+            );
+
+            socket.send(sendPacket);
+            System.out.println("WRQ request sent successfully");
+
+            byte[] buffer = new byte[BUFFER_SIZE];
+            DatagramPacket receivePacket = new DatagramPacket(buffer, buffer.length);
+            socket.receive(receivePacket);
+
+            String response = packetToMessage(receivePacket);
+            Packet packet = PacketUtil.fromJson(response);
+
+            if(packet.getType().equals("ACK") && packet.getBlock() == 0) {
+                System.out.println("WRQ accepted by server");
+                Path uploadPath = Path.of("C:/gsj_study/NetworkSytudy/src/gsj_project/filetransfer/" + filename);
+                sendFile(socket, receivePacket, uploadPath);
+            }else if(packet.getType().equals("ERROR")) {
+                System.out.println("Server error: " + packet.getMessage());
+            }
+        }catch(Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    //클라이언트가 서버로 파일을 업로드 할 때 파일 데이터를 보내는 메서드
+    private void sendFile(DatagramSocket socket, DatagramPacket receivePacket, Path filePath){
+        try {
+            byte[] fileBytes = Files.readAllBytes(filePath);
+            int block = 1;
+
+            //파일을 512 바이트씩 나눔
+            for(int offset = 0; offset < fileBytes.length; offset += BLOCK_SIZE) {
+                int dataSize = Math.min(BLOCK_SIZE, fileBytes.length - offset);
+
+                byte[] chunk = java.util.Arrays.copyOfRange(
+                        fileBytes,
+                        offset,
+                        offset + dataSize
+                );
+
+                String encodeData = Base64.getEncoder().encodeToString(chunk);
+                String dataPacket = PacketUtil.createDATA(block, encodeData, dataSize);
+                byte[] dataBytes = dataPacket.getBytes(StandardCharsets.UTF_8);
+
+                DatagramPacket sendPacket = new DatagramPacket(
+                        dataBytes,
+                        dataBytes.length,
+                        receivePacket.getAddress(),
+                        receivePacket.getPort()
+                );
+
+                socket.send(sendPacket);
+                System.out.println("Upload DATA block sent: " + block);
+
+                byte[] ackBuffer = new byte[BUFFER_SIZE];
+                DatagramPacket ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length);
+                socket.receive(ackPacket);
+
+                String ackMessage = packetToMessage(ackPacket);
+                Packet ack = PacketUtil.fromJson(ackMessage);
+
+                if(ack.getType().equals("ACK") && ack.getBlock() == block) {
+                    System.out.println("Upload ACK received: " + block);
+                    block++;
+                }else{
+                    System.out.println("Invalid upload ACK received");
+                    break;
+                }
+
+                if(dataSize < BLOCK_SIZE) {
+                    break;
+                }
+            }
+
+            System.out.println("File upload finished");
+        }catch(Exception e) {
+            e.printStackTrace();
+        }
     }
 }

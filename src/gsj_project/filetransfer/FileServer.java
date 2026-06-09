@@ -56,6 +56,13 @@ public class FileServer {
             }
 
             handleRRQ(socket, receivePacket, filename);
+        }else if(packet.getType().equals("WRQ")) {
+            String filename = packet.getFilename();
+            if(filename == null || filename.isBlank()) {
+                sendError(socket, receivePacket, "Filename is required");
+                return;
+            }
+            handleWRQ(socket, receivePacket, filename);
         }else{
             sendError(socket, receivePacket, "Unsupported request type: " + packet.getType());
         }
@@ -68,6 +75,16 @@ public class FileServer {
             sendFile(socket, receivePacket, filePath);
         }else{
             sendError(socket, receivePacket, "File not found: " + filename);
+        }
+    }
+
+    private void handleWRQ(DatagramSocket socket, DatagramPacket receivePacket, String filename) {
+        try{
+            String ack = PacketUtil.createACK(0);
+            sendMessage(socket, ack, receivePacket);
+            System.out.println("WRQ accepted. ACK sent: 0");
+        }catch(Exception e){
+            e.printStackTrace();
         }
     }
 
