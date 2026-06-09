@@ -9,6 +9,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Base64;
 import java.net.SocketTimeoutException;
+import java.io.ByteArrayOutputStream;
 
 public class FileServer {
     private static final int SERVER_PORT = 9000;
@@ -83,6 +84,38 @@ public class FileServer {
             String ack = PacketUtil.createACK(0);
             sendMessage(socket, ack, receivePacket);
             System.out.println("WRQ accepted. ACK sent: 0");
+
+            ByteArrayOutputStream fileOutput = new ByteArrayOutputStream();
+
+            while(true) {
+                byte[] buffer = new byte[BUFFER_SIZE];
+                DatagramPacket dataPacket = new DatagramPacket(buffer, buffer.length);
+                socket.receive(dataPacket);
+
+                //받은 데이터를 JSON 문자열로 바꿔주고 그걸 다시 Packet 객체로 비꿈.
+                String message = packetToMessage(dataPacket);
+                Packet packet = PacketUtil.fromJson(message);
+
+                if(packet.getType().equals("DATA")) {
+                    byte[] decodedData = Base64.getDecoder().decode(packet.getData());
+                    fileOutput.write(decodedData);
+
+                    String dataAck = PacketUtil.createACK(packet.getBlock());
+                    sendMessage(socket, dataAck, dataPacket);
+                    System.out.println("Upload DATA received. ACK sent: " + packet.getBlock());
+
+                    if(packet.getDataSize() < BLOCK_SIZE) {
+                        break;
+                    }
+                }else{
+                    sendError(socket, dataPacket, "Expected DATA packet");
+                    return;
+                }
+            }
+
+            Path savePath = BASE_DIR.resolve("uploaded_" + filename);
+            Files.write(savePath, fileOutput.toByteArray());
+            System.out.println("Uploaded file saved: " + savePath);
         }catch(Exception e){
             e.printStackTrace();
         }
@@ -186,13 +219,9 @@ public class FileServer {
         );
     }
 
-    private static void sendMessage(
-            DatagramSocket socket,
-            String message,
-            DatagramPacket targetPacket
-    ) throws Exception {
+    //문자열 JSON을 UPD 패킷으로 만들어서 보내는 메소드
+    private static void sendMessage(DatagramSocket socket, String message, DatagramPacket targetPacket) throws Exception {
         byte[] buffer = message.getBytes(StandardCharsets.UTF_8);
-
         DatagramPacket sendPacket = new DatagramPacket(
                 buffer,
                 buffer.length,
@@ -201,4 +230,6 @@ public class FileServer {
         );
         socket.send(sendPacket);
     }
+
+
 }

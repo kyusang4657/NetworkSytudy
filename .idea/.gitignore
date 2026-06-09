@@ -22,3 +22,11 @@ out/
 
 # Runtime generated files
 src/gsj_project/filetransfer/downloaded_*.txt
+
+# Java / IntelliJ build output
+out/
+*.class
+
+# Runtime generated files
+src/gsj_project/filetransfer/downloaded_*.txt
+src/gsj_project/filetransfer/uploaded_*.txt
