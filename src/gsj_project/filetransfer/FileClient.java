@@ -17,17 +17,14 @@ public class FileClient {
 
     public static void main(String[] args) {
         FileClient client = new FileClient();
-        client.downloadFile("test.txt");
-        client.uploadFile("test.txt");
+        //client.downloadFile("test.txt");
     }
 
-    public void downloadFile(String filename) {
+    public void downloadFile(String filename, Path outputPath) {
         try (DatagramSocket socket = new DatagramSocket()) {
             InetAddress serverAddress = InetAddress.getByName(SERVER_IP);
 
             sendRRQ(socket, serverAddress, filename);
-
-            Path outputPath = Path.of("C:/gsj_study/NetworkSytudy/src/gsj_project/filetransfer/downloaded_" + filename);
             receiveFile(socket, outputPath);
         }catch(Exception e){
             e.printStackTrace();
@@ -106,9 +103,11 @@ public class FileClient {
         );
     }
 
-    public void uploadFile(String filename) {
+    public void uploadFile(Path filePath) {
         try (DatagramSocket socket = new DatagramSocket()) {
             InetAddress serverAddress = InetAddress.getByName(SERVER_IP);
+
+            String filename = filePath.getFileName().toString();
 
             String request = PacketUtil.createWRQ(filename);
             byte[] requestBytes = request.getBytes(StandardCharsets.UTF_8);
@@ -132,8 +131,7 @@ public class FileClient {
 
             if(packet.getType().equals("ACK") && packet.getBlock() == 0) {
                 System.out.println("WRQ accepted by server");
-                Path uploadPath = Path.of("C:/gsj_study/NetworkSytudy/src/gsj_project/filetransfer/" + filename);
-                sendFile(socket, receivePacket, uploadPath);
+                sendFile(socket, receivePacket, filePath);
             }else if(packet.getType().equals("ERROR")) {
                 System.out.println("Server error: " + packet.getMessage());
             }

@@ -38,7 +38,17 @@ public class FileServer {
 
                 System.out.println("Request received:");
                 System.out.println(message);
-                handlePacket(socket, receivePacket, message);
+
+                DatagramPacket requestCopy = copyPacket(receivePacket);
+                String messageCopy = message;
+
+                new Thread(() -> {
+                    try(DatagramSocket transferSocket = new DatagramSocket()) {
+                        handlePacket(transferSocket, requestCopy, messageCopy);
+                    }catch(Exception e) {
+                        e.printStackTrace();
+                    }
+                }).start();
             }
         }catch(Exception e){
             e.printStackTrace();
@@ -231,5 +241,14 @@ public class FileServer {
         socket.send(sendPacket);
     }
 
+    private static DatagramPacket copyPacket(DatagramPacket packet) {
+        byte[] data = Arrays.copyOf(packet.getData(), packet.getLength());
 
+        return new DatagramPacket(
+                data,
+                data.length,
+                packet.getAddress(),
+                packet.getPort()
+        );
+    }
 }
