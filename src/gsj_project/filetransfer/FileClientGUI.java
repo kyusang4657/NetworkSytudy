@@ -25,10 +25,10 @@ public class FileClientGUI extends JFrame {
 
         JPanel inputPanel = new JPanel(new GridLayout(2, 3, 8, 8));
 
-        downloadFileField = new JTextField("test.txt");
+        downloadFileField = new JTextField("");
         JButton downloadButton = new JButton("Download");
 
-        uploadFileField = new JTextField("test.txt");
+        uploadFileField = new JTextField("");
         JButton uploadButton = new JButton("Upload");
 
         inputPanel.add(new JLabel("Download file:"));
@@ -62,7 +62,7 @@ public class FileClientGUI extends JFrame {
         }
 
         JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setSelectedFile(new java.io.File("downloaded_" + filename));
+        fileChooser.setSelectedFile(new java.io.File(filename));
 
         int result = fileChooser.showSaveDialog(this);
 

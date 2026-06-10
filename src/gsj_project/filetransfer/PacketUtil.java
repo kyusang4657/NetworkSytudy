@@ -33,4 +33,9 @@ public class PacketUtil {
             Packet packet = new Packet("WRQ", filename, 0, null, null, 0);
             return gson.toJson(packet);
     }
+
+    public static String createNACK(int block) {
+        Packet packet = new Packet("NACK", null, block, null, "Invalid block", 0);
+        return gson.toJson(packet);
+    }
 }

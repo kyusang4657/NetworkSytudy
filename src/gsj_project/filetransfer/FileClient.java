@@ -8,16 +8,17 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.io.ByteArrayOutputStream;
 import java.util.Base64;
+import java.net.SocketTimeoutException;
 
 public class FileClient {
     private static final String SERVER_IP = "127.0.0.1";
     private static final int SERVER_PORT = 9000;
     private static final int BUFFER_SIZE = 4096;
     private static final int BLOCK_SIZE = 512;
+    private static final int TIMEOUT = 3000;
 
     public static void main(String[] args) {
         FileClient client = new FileClient();
-        //client.downloadFile("test.txt");
     }
 
     public void downloadFile(String filename, Path outputPath) {
@@ -50,6 +51,7 @@ public class FileClient {
             byte[] buffer = new byte[BUFFER_SIZE];
             DatagramPacket receivePacket = new DatagramPacket(buffer, buffer.length);
             ByteArrayOutputStream fileOutput = new ByteArrayOutputStream();
+            int expectedBlock = 1;
 
             while(true){
                 receivePacket.setLength(buffer.length);
@@ -59,12 +61,16 @@ public class FileClient {
                 Packet packet = PacketUtil.fromJson(response);
 
                 if(packet.getType().equals("DATA")){
+                    if(packet.getBlock() != expectedBlock) {
+                        sendNACK(socket, receivePacket, expectedBlock);
+                        continue;
+                    }
                     byte[] decodeData = Base64.getDecoder().decode(packet.getData());
                     fileOutput.write(decodeData);
 
                     System.out.println("DATA block received: " + packet.getBlock());
                     sendACK(socket, receivePacket, packet.getBlock());
-
+                    expectedBlock++;
                     if(packet.getDataSize() < BLOCK_SIZE){
                         break;
                     }
@@ -92,6 +98,21 @@ public class FileClient {
 
         socket.send(ackPacket);
         System.out.println("ACK sent: " + block);
+    }
+
+    private void sendNACK(DatagramSocket socket, DatagramPacket receivePacket, int expectedBlock) throws Exception {
+        String nack = PacketUtil.createNACK(expectedBlock);
+        byte[] nackBytes = nack.getBytes(StandardCharsets.UTF_8);
+
+        DatagramPacket nackPacket = new DatagramPacket(
+                nackBytes,
+                nackBytes.length,
+                receivePacket.getAddress(),
+                receivePacket.getPort()
+        );
+
+        socket.send(nackPacket);
+        System.out.println("NACK sent: " + expectedBlock);
     }
 
     private static String packetToMessage(DatagramPacket packet) {
@@ -170,20 +191,35 @@ public class FileClient {
                 socket.send(sendPacket);
                 System.out.println("Upload DATA block sent: " + block);
 
-                byte[] ackBuffer = new byte[BUFFER_SIZE];
-                DatagramPacket ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length);
-                socket.receive(ackPacket);
+                socket.setSoTimeout(TIMEOUT);
 
-                String ackMessage = packetToMessage(ackPacket);
-                Packet ack = PacketUtil.fromJson(ackMessage);
+                boolean ackReceived = false;
 
-                if(ack.getType().equals("ACK") && ack.getBlock() == block) {
-                    System.out.println("Upload ACK received: " + block);
-                    block++;
-                }else{
-                    System.out.println("Invalid upload ACK received");
-                    break;
+                while(!ackReceived){
+                    try{
+                        byte[] ackBuffer = new byte[BUFFER_SIZE];
+                        DatagramPacket ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length);
+                        socket.receive(ackPacket);
+
+                        String ackMessage = packetToMessage(ackPacket);
+                        Packet ack = PacketUtil.fromJson(ackMessage);
+
+                        if(ack.getType().equals("ACK") && ack.getBlock() == block) {
+                            System.out.println("Upload ACK received: " + block);
+                            ackReceived = true;
+                        } else if(ack.getType().equals("NACK")) {
+                            socket.send(sendPacket);
+                            System.out.println("Upload NACK received. Resend DATA block: " + block);
+                        } else {
+                            System.out.println("Invalid upload response received");
+                        }
+                    }catch(SocketTimeoutException e) {
+                        socket.send(sendPacket);
+                        System.out.println("Upload ACK timeout. Resend DATA block: " + block);
+                    }
                 }
+                socket.setSoTimeout(0);
+                block++;
 
                 if(dataSize < BLOCK_SIZE) {
                     break;

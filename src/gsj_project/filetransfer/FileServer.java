@@ -1,5 +1,6 @@
 package gsj_project.filetransfer;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.net.DatagramPacket;
@@ -96,7 +97,7 @@ public class FileServer {
             System.out.println("WRQ accepted. ACK sent: 0");
 
             ByteArrayOutputStream fileOutput = new ByteArrayOutputStream();
-
+            int expectedBlock = 1;
             while(true) {
                 byte[] buffer = new byte[BUFFER_SIZE];
                 DatagramPacket dataPacket = new DatagramPacket(buffer, buffer.length);
@@ -107,11 +108,15 @@ public class FileServer {
                 Packet packet = PacketUtil.fromJson(message);
 
                 if(packet.getType().equals("DATA")) {
+                    if(packet.getBlock() != expectedBlock) {
+                        sendNACK(socket, dataPacket, expectedBlock);
+                        continue;
+                    }
                     byte[] decodedData = Base64.getDecoder().decode(packet.getData());
                     fileOutput.write(decodedData);
 
-                    String dataAck = PacketUtil.createACK(packet.getBlock());
-                    sendMessage(socket, dataAck, dataPacket);
+                    sendACK(socket, dataPacket, packet.getBlock());
+                    expectedBlock++;
                     System.out.println("Upload DATA received. ACK sent: " + packet.getBlock());
 
                     if(packet.getDataSize() < BLOCK_SIZE) {
@@ -123,7 +128,7 @@ public class FileServer {
                 }
             }
 
-            Path savePath = BASE_DIR.resolve("uploaded_" + filename);
+            Path savePath = BASE_DIR.resolve(filename);
             Files.write(savePath, fileOutput.toByteArray());
             System.out.println("Uploaded file saved: " + savePath);
         }catch(Exception e){
@@ -192,8 +197,11 @@ public class FileServer {
                         System.out.println("ACK received: " + block);
                         socket.setSoTimeout(0);
                         return true;
-                    }else{
-                        System.out.println("Invalid ACK received");
+                    } else if(ack.getType().equals("NACK")) {
+                        socket.send(sendPacket);
+                        System.out.println("NACK received. Resend DATA block: " + block);
+                    } else {
+                        System.out.println("Invalid response received");
                     }
                 }catch(SocketTimeoutException e) {
                     socket.send(sendPacket);
@@ -239,6 +247,18 @@ public class FileServer {
                 targetPacket.getPort()
         );
         socket.send(sendPacket);
+    }
+
+    private void sendACK(DatagramSocket socket, DatagramPacket receivePacket, int block) throws Exception {
+        String ack = PacketUtil.createACK(block);
+        sendMessage(socket, ack, receivePacket);
+        System.out.println("ACK send: " + block);
+    }
+
+    private void sendNACK(DatagramSocket socket, DatagramPacket receivePacket, int expectedBlock) throws Exception {
+        String nack = PacketUtil.createNACK(expectedBlock);
+        sendMessage(socket, nack, receivePacket);
+        System.out.println("NACK send: " + expectedBlock);
     }
 
     private static DatagramPacket copyPacket(DatagramPacket packet) {
